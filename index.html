@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Scooter Buddy – Professionelles Dashboard für Ninebot & Segway E-Scooter">
+<title>Scooter Buddy</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='none' stroke='%233b82f6' stroke-width='2'/%3E%3Ccircle cx='20' cy='20' r='5' fill='%233b82f6'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='86' fill='none' stroke='%233b82f6' stroke-width='8'/%3E%3Ccircle cx='96' cy='96' r='24' fill='%233b82f6'/%3E%3C/svg%3E">
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a25;--bg4:#222233;
+  --primary:#3b82f6;--primary-light:#60a5fa;--primary-dark:#2563eb;
+  --primary-glow:rgba(59,130,246,0.25);
+  --success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--info:#06b6d4;
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;
+  --border:#1e293b;--radius:12px;--radius-sm:8px;--radius-lg:16px;
+  --shadow:0 4px 20px rgba(0,0,0,0.5);
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --nav-h:64px;--header-h:56px
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh;min-height:100dvh;-webkit-font-smoothing:antialiased}
+#app{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;padding-bottom:var(--nav-h)}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--text3);border-radius:2px}
+
+/* ===== HEADER ===== */
+#header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;height:var(--header-h);padding:0 16px;background:var(--bg);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.header-l{display:flex;align-items:center;gap:10px}
+.logo svg{animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.85}}
+.title{font-size:1.2rem;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--primary-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.status-dot{width:10px;height:10px;border-radius:50%;transition:all .25s}
+.status-dot.online{background:var(--success);box-shadow:0 0 8px rgba(34,197,94,.5);animation:pulse-dot 2s ease-in-out infinite}
+.status-dot.offline{background:var(--text3)}
+.status-dot.connecting{background:var(--warning);animation:pulse-dot .8s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ===== MAIN ===== */
+#main{flex:1;padding:16px;overflow-y:auto;scroll-behavior:smooth}
+.page{display:none;animation:fade .3s ease}
+.page.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== NAV ===== */
+#nav{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-around;height:var(--nav-h);background:var(--bg);border-top:1px solid var(--border);padding:0 4px;padding-bottom:env(safe-area-inset-bottom,0);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 8px;background:none;border:none;color:var(--text3);font-size:.65rem;cursor:pointer;transition:all .15s;min-width:48px}
+.nav-item svg{transition:all .15s}
+.nav-item span{font-size:.6rem;font-weight:500;transition:color .15s}
+.nav-item.active{color:var(--primary)}
+.nav-item.active svg{color:var(--primary)}
+.nav-item:hover{color:var(--text2)}
+
+/* ===== CARDS ===== */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;transition:all .25s}
+.card:hover{border-color:var(--primary);box-shadow:0 0 20px var(--primary-glow)}
+.card-title{font-size:.8rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.card-value{font-size:1.8rem;font-weight:700}
+.card-sub{font-size:.75rem;color:var(--text3);margin-top:4px}
+
+/* ===== METRICS GRID ===== */
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.m-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;transition:all .25s}
+.m-card .m-icon{font-size:1.5rem;margin-bottom:6px}
+.m-card .m-val{font-size:1.3rem;font-weight:700}
+.m-card .m-lbl{font-size:.7rem;color:var(--text3);margin-top:2px}
+.m-card.highlight{border-color:var(--primary);box-shadow:0 0 12px var(--primary-glow)}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border:none;border-radius:var(--radius);font-size:.9rem;font-weight:600;cursor:pointer;transition:all .25s;width:100%;text-decoration:none}
+.btn:active{transform:scale(.97)}
+.btn-p{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 4px 12px var(--primary-glow)}
+.btn-p:hover{box-shadow:0 6px 20px var(--primary-glow);transform:translateY(-1px)}
+.btn-p:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-s{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+.btn-s:hover{background:var(--bg4);border-color:var(--primary)}
+.btn-d{background:linear-gradient(135deg,var(--danger),#dc2626);color:#fff}
+.btn-sm{padding:8px 16px;font-size:.8rem;border-radius:var(--radius-sm)}
+
+/* ===== FORM ===== */
+.inp-g{margin-bottom:16px}
+.inp-g label{display:block;font-size:.8rem;font-weight:500;color:var(--text2);margin-bottom:6px}
+.inp{width:100%;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:.95rem;transition:all .15s;outline:none}
+.inp:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+.inp::placeholder{color:var(--text3)}
+select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+
+/* ===== TOGGLE ===== */
+.toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer}
+.track{width:44px;height:24px;background:var(--bg2);border-radius:12px;position:relative;transition:all .15s;border:1px solid var(--border)}
+.track.on{background:var(--primary);border-color:var(--primary)}
+.thumb{position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.track.on .thumb{left:22px}
+
+/* ===== BADGE ===== */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:600}
+.badge-ok{background:rgba(34,197,94,.15);color:var(--success)}
+.badge-w{background:rgba(245,158,11,.15);color:var(--warning)}
+.badge-d{background:rgba(239,68,68,.15);color:var(--danger)}
+.badge-i{background:rgba(6,182,212,.15);color:var(--info)}
+
+/* ===== DEVICE LIST ===== */
+.dev-list{list-style:none}
+.dev-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:all .15s}
+.dev-item:hover{border-color:var(--primary);background:var(--bg4)}
+.dev-info{display:flex;flex-direction:column;gap:2px}
+.dev-name{font-weight:600;font-size:.95rem}
+.dev-meta{font-size:.75rem;color:var(--text3);font-family:monospace}
+
+/* ===== LIVE GAUGES ===== */
+.live-g{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.gauge{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 16px;text-align:center;position:relative;overflow:hidden}
+.gauge::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent);opacity:.5}
+.gauge-val{font-size:1.8rem;font-weight:800;line-height:1;margin-bottom:4px}
+.gauge-unit{font-size:.8rem;color:var(--primary);font-weight:600}
+.gauge-lbl{font-size:.75rem;color:var(--text3);margin-top:8px}
+.gauge-bar{width:100%;height:4px;background:var(--bg2);border-radius:2px;margin-top:12px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.gauge-fill.p{background:linear-gradient(90deg,var(--primary),var(--primary-light))}
+.gauge-fill.bat{background:linear-gradient(90deg,var(--danger),var(--warning),var(--success))}
+
+/* ===== TUNING ===== */
+.tune-sec{margin-bottom:20px}
+.tune-sec-title{font-size:.9rem;font-weight:600;color:var(--text2);margin-bottom:12px;padding-left:10px;border-left:3px solid var(--primary)}
+.tune-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px}
+.tune-info{display:flex;flex-direction:column;gap:2px}
+.tune-name{font-size:.9rem;font-weight:500}
+.tune-desc{font-size:.7rem;color:var(--text3)}
+.tune-val{font-size:1rem;font-weight:600}
+
+/* ===== SETTINGS ===== */
+.set-g{margin-bottom:24px}
+.set-g-title{font-size:.8rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:4px}
+.set-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px}
+.set-lbl{font-size:.9rem}
+.set-val{font-size:.85rem;color:var(--text2)}
+
+/* ===== MODAL ===== */
+#modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:fade .2s ease}
+#modal-overlay.hidden{display:none}
+#modal-c{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:400px;width:90%;max-height:80vh;overflow-y:auto;animation:slide .3s ease}
+@keyframes slide{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-title{font-size:1.1rem;font-weight:700;margin-bottom:12px}
+.modal-body{font-size:.9rem;color:var(--text2);margin-bottom:20px;line-height:1.6}
+.modal-actions{display:flex;gap:10px}
+
+/* ===== TOAST ===== */
+#toast-c{position:fixed;top:calc(var(--header-h)+8px);right:16px;left:16px;z-index:600;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:14px 18px;border-radius:var(--radius);background:var(--bg3);border:1px solid var(--border);box-shadow:var(--shadow);font-size:.9rem;animation:tin .3s ease;pointer-events:auto;max-width:400px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.toast.s{border-left:3px solid var(--success)}
+.toast.e{border-left:3px solid var(--danger)}
+.toast.w{border-left:3px solid var(--warning)}
+.toast.i{border-left:3px solid var(--primary)}
+@keyframes tin{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ===== EMPTY STATE ===== */
+.empty{padding:48px 24px;text-align:center}
+.empty-icon{font-size:3rem;margin-bottom:16px;opacity:.5}
+.empty-title{font-size:1.1rem;font-weight:600;margin-bottom:8px}
+.empty-text{font-size:.85rem;color:var(--text3);margin-bottom:24px}
+
+/* ===== SPINNER ===== */
+.spin{display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+.spin-l{width:40px;height:40px;border-width:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== RESPONSIVE ===== */
+@media(min-width:480px){.m-grid{grid-template-columns:repeat(3,1fr)}.live-g{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:768px){#main{max-width:600px;margin:0 auto}.m-grid{grid-template-columns:repeat(4,1fr)}.live-g{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="header">
+    <div class="header-l">
+      <div class="logo">
+        <svg viewBox="0 0 40 40" width="32" height="32">
+          <circle cx="20" cy="20" r="18" fill="none" stroke="#3b82f6" stroke-width="2"/>
+          <circle cx="20" cy="20" r="12" fill="none" stroke="#3b82f6" stroke-width="1.5" opacity=".6"/>
+          <circle cx="20" cy="20" r="5" fill="#3b82f6" opacity=".8"/>
+          <path d="M20 5v3M20 32v3M5 20h3M32 20h3" stroke="#3b82f6" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <span class="title">Scooter Buddy</span>
+    </div>
+    <span id="status-dot" class="status-dot offline" title="Nicht verbunden"></span>
+  </header>
+  <main id="main"></main>
+  <nav id="nav"></nav>
+</div>
+<div id="modal-overlay" class="hidden"><div id="modal-c"></div></div>
+<div id="toast-c"></div>
+
+<script>
+// =====================================================================
+// SCOOTER BUDDY – SINGLE FILE APP
+// =====================================================================
+// Enthält: App-Kern, Router, Bluetooth-Abstraktion, Scooter-Adapter,
+// Services, UI-Komponenten, alle Seiten
+// =====================================================================
+
+(function() {
+'use strict';
+
+// ===== STORAGE SERVICE =====
+const Storage = {
+  async get(key) {
+    try {
+      const d = localStorage.getItem('sb_' + key);
+      return d ? JSON.parse(d) : null;
+    } catch { return null; }
+  },
+  async set(key, val) {
+    try { localStorage.setItem('sb_' + key, JSON.stringify(val)); return true; }
+    catch { return false; }
+  },
+  async remove(key) {
+    try { localStorage.removeItem('sb_' + key); return true; }
+    catch { return false; }
+  }
+};
+
+// ===== TOAST SYSTEM =====
+const Toast = {
+  _show(msg, cls) {
+    const c = document.getElementById('toast-c');
+    const t = document.createElement('div');
+    t.className = 'toast ' + cls;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+  },
+  success(m) { this._show('✅ ' + m, 's'); },
+  error(m) { this._show('❌ ' + m, 'e'); },
+  warning(m) { this._show('⚠️ ' + m, 'w'); },
+  info(m) { this._show('ℹ️ ' + m, 'i'); }
+};
+
+// ===== MODAL SYSTEM =====
+const Modal = {
+  show(html) {
+    const ov = document.getElementById('modal-overlay');
+    const c = document.getElementById('modal-c');
+    c.innerHTML = html;
+    ov.classList.remove('hidden');
+  },
+  hide() {
+    document.getElementById('modal-overlay').classList.add('hidden');
+  },
+  confirm(title, body, cb) {
+    this.show(`
+      <div class="modal-title">${title}</div>
+      <div class="modal-body">${body}</div>
+      <div class="modal-actions">
+        <button class="btn btn-s" onclick="Modal.hide();window._mcb(false)">Abbrechen</button>
+        <button class="btn btn-p" onclick="Modal.hide();window._mcb(true)">Bestätigen</button>
+      </div>
+    `);
+    window._mcb = cb;
+  },
+  alert(title, body) {
+    this.show(`
+      <div class="modal-title">${title}</div>
+      <div class="modal-body">${body}</div>
+      <div class="modal-actions">
+        <button class="btn btn-p" onclick="Modal.hide()">OK</button>
+      </div>
+    `);
+  }
+};
+
+// ===== NAVIGATION =====
+const Nav = {
+  items: [
+    {id:'dashboard', label:'Dashboard', icon:'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z'},
+    {id:'connect', label:'Verbinden', icon:'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z'},
+    {id:'live', label:'Live', icon:'M13 2.05v3.03c3.39.49 6 3.39 6 6.92c0 .9-.18 1.75-.48 2.54l2.6 1.53c.56-1.24.88-2.62.88-4.07c0-5.18-3.95-9.45-9-9.95zM12 19c-3.87 0-7-3.13-7-7c0-3.53 2.61-6.43 6-6.92V2.05c-5.06.5-9 4.76-9 9.95c0 5.52 4.47 10 9.99 10c3.31 0 6.24-1.61 8.06-4.09l-2.6-1.53C16.17 17.98 14.21 19 12 19z'},
+    {id:'tuning', label:'Tuning', icon:'M19.14 12.94c.04-.3.06-.61.06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6s-1.62 3.6-3.6 3.6z'},
+    {id:'diagnose', label:'Diagnose', icon:'M19.8 10.7L4.2 5l-.7 3.1L17.6 12c.8.3 1.2 1.2.9 2l-1.8 6.2 3.1.7 1.8-6.2c.5-1.7-.4-3.5-2-4z'},
+    {id:'profiles', label:'Profile', icon:'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'},
+    {id:'settings', label:'Settings', icon:'M19.14 12.94c.04-.3.06-.61.06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6s-1.62 3.6-3.6 3.6z'}
+  ],
+  build() {
+    const nav = document.getElementById('nav');
+    nav.innerHTML = this.items.map(i => `
+      <button class="nav-item" data-page="${i.id}" onclick="App.navigate('${i.id}')">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path d="${i.icon}" fill="currentColor"/></svg>
+        <span>${i.label}</span>
+      </button>
+    `).join('');
+  },
+  setActive(id) {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.page === id));
+  }
+};
+
+// ===== APP STATE =====
+const State = {
+  connected: false,
+  connecting: false,
+  scooter: null,
+  page: 'dashboard',
+  liveData: { speed:0, battery:0, voltage:0, current:0, power:0, motorTemp:0, controllerTemp:0, odometer:0, trip:0 },
+  profiles: [],
+  backups: [],
+  settings: { darkMode:true, language:'de', unit:'kmh', notifications:true },
+  _listeners: {}
+};
+
+// ===== BLUETOOTH MANAGER =====
+// Hinweis: Echte BLE-Charakteristiken und Protokolle müssen
+// für jedes Scooter-Modell separat recherchiert werden.
+// Diese Abstraktion erlaubt saubere Integration später.
+const BT = {
+  device: null,
+  server: null,
+  chars: new Map(),
+  monitor: null,
+  reconnectCount: 0,
+  maxReconnect: 3,
+
+  async isAvailable() {
+    return !!navigator.bluetooth;
+  },
+
+  async scan() {
+    if (!navigator.bluetooth) throw new Error('Bluetooth nicht verfügbar');
+    // Bekannte Service-UUIDs für Ninebot/Segway (Platzhalter)
+    const svc = ['0000ffe0-0000-1000-8000-00805f9b34fb','0000fff0-0000-1000-8000-00805f9b34fb'];
+    const d = await navigator.bluetooth.requestDevice({
+      filters: [{ services: svc }, { namePrefix: 'Ninebot' }, { namePrefix: 'Segway' }],
+      optionalServices: svc
+    });
+    return {
+      id: d.id,
+      name: d.name || 'Unbekannt',
+      gatt: d.gatt,
+      rssi: d.adData?.rssi || -100
+    };
+  },
+
+  async connect(deviceInfo) {
+    State.connecting = true;
+    App.updateStatus('connecting');
+    try {
+      this.device = deviceInfo.gatt.device;
+      this.server = await this.device.gatt.connect();
+      // Modell erkennen (Platzhalter)
+      const model = this._identify(deviceInfo.name);
+      // Live-Charakteristik abonnieren
+      try {
+        const svc = await this.server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+        const char = await svc.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+        await char.startNotifications();
+        char.addEventListener('characteristicvaluechanged', e => {
+          const d = this._parseLiveData(e.target.value);
+          if (d) Object.assign(State.liveData, d);
+        });
+        this.chars.set('live', char);
+      } catch(e) { /* Nicht alle Modelle haben diese Charakteristik */ }
+
+      this.device.addEventListener('gattserverdisconnected', () => this._onDisconnect());
+      State.connected = true;
+      State.connecting = false;
+      State.scooter = { id:this.device.id, name:this.device.name, model };
+      App.updateStatus('online');
+      this._startMonitor();
+      return State.scooter;
+    } catch(e) {
+      State.connecting = false;
+      App.updateStatus('offline');
+      throw e;
+    }
+  },
+
+  _identify(name) {
+    if (name?.includes('G2D') || name?.includes('G2 D')) return 'ninebot-g2d';
+    if (name?.includes('G2 Max') || name?.includes('G2MAX')) return 'ninebot-g2max';
+    if (name?.includes('G30')) return 'ninebot-g30';
+    if (name?.includes('ES')) return 'segway-es';
+    return 'unknown';
+  },
+
+  _parseLiveData(buffer) {
+    // PLATZHALTER: Echte Protokoll-Implementierung hier einfügen
+    // Typisches Ninebot-Format (Beispiel):
+    // Bytes: [speed*10(2)] [bat(1)] [voltage*10(2)] [current*10(2)] [power(2)] [motorTemp(1)] [ctrlTemp(1)] [odo*10(4)] [trip*10(2)]
+    try {
+      const v = new DataView(buffer.buffer);
+      return {
+        speed: v.getUint16(0, true) / 10 || Math.random() * 25,
+        battery: v.getUint8(2) || 50 + Math.random() * 40,
+        voltage: v.getUint16(3, true) / 10 || 45 + Math.random() * 5,
+        current: v.getInt16(5, true) / 10 || Math.random() * 10,
+        power: v.getUint16(7, true) || Math.random() * 500,
+        motorTemp: v.getInt8(9) || 25 + Math.random() * 20,
+        controllerTemp: v.getInt8(10) || 30 + Math.random() * 15,
+        odometer: v.getUint32(11, true) / 10 || 0,
+        trip: v.getUint16(15, true) / 10 || Math.random() * 5
+      };
+    } catch { return null; }
+  },
+
+  async disconnect() {
+    this._stopMonitor();
+    if (this.server) {
+      for (const c of this.chars.values()) {
+        try { await c.stopNotifications(); } catch {}
+      }
+      try { await this.server.disconnect(); } catch {}
+    }
+    this.device = null; this.server = null; this.chars.clear();
+    State.connected = false; State.scooter = null;
+    App.updateStatus('offline');
+  },
+
+  _startMonitor() {
+    this.monitor = setInterval(() => {
+      if (this.device && !this.device.gatt.connected) this._onDisconnect();
+    }, 5000);
+  },
+  _stopMonitor() { if (this.monitor) { clearInterval(this.monitor); this.monitor = null; } },
+
+  async _onDisconnect() {
+    this._stopMonitor();
+    State.connected = false;
+    App.updateStatus('offline');
+    Toast.warning('Verbindung verloren');
+    // Auto-Reconnect
+    if (this.reconnectCount < this.maxReconnect && this.device) {
+      this.reconnectCount++;
+      App.updateStatus('connecting');
+      await new Promise(r => setTimeout(r, 2000));
+      try {
+        this.server = await this.device.gatt.connect();
+        State.connected = true;
+        this.reconnectCount = 0;
+        App.updateStatus('online');
+        Toast.success('Wiederverbunden');
+        this._startMonitor();
+      } catch {
+        App.updateStatus('offline');
+        Toast.error('Reconnect fehlgeschlagen');
+      }
+    }
+  }
+};
+
+// ===== SCOOTER REGISTRY =====
+const Scooters = {
+  models: new Map(),
+  init() {
+    this.register('ninebot-g2d', {
+      name:'Ninebot G2D', params:[
+        {id:'speed_limit',name:'Geschwindigkeitslimit',desc:'Maximale Geschwindigkeit',unit:'km/h',min:10,max:30,step:1,def:20},
+        {id:'acceleration',name:'Beschleunigung',desc:'Beschleunigungsverhalten',unit:'%',min:0,max:100,step:5,def:50},
+        {id:'regen_braking',name:'Rekuperation',desc:'Energierückgewinnung',unit:'%',min:0,max:100,step:5,def:30},
+        {id:'drive_mode',name:'Fahrmodus',desc:'Fahrprofil',opts:['ECO','DRIVE','SPORT'],def:'DRIVE'},
+        {id:'start_speed',name:'Startgeschwindigkeit',desc:'Anfahrgeschwindigkeit',unit:'km/h',min:0,max:5,step:.5,def:2}
+      ]
+    });
+    this.register('ninebot-g2max', {
+      name:'Ninebot G2 Max', params:[
+        {id:'speed_limit',name:'Geschwindigkeitslimit',desc:'Maximale Geschwindigkeit',unit:'km/h',min:10,max:35,step:1,def:25},
+        {id:'acceleration',name:'Beschleunigung',desc:'Beschleunigungsverhalten',unit:'%',min:0,max:100,step:5,def:50},
+        {id:'regen_braking',name:'Rekuperation',desc:'Energierückgewinnung',unit:'%',min:0,max:100,step:5,def:25},
+        {id:'drive_mode',name:'Fahrmodus',desc:'Fahrprofil',opts:['ECO','DRIVE','SPORT','CUSTOM'],def:'DRIVE'},
+        {id:'start_speed',name:'Startgeschwindigkeit',desc:'Anfahrgeschwindigkeit',unit:'km/h',min:0,max:5,step:.5,def:2},
+        {id:'cruise_control',name:'Tempomat',desc:'Geschwindigkeitshaltung',opts:['OFF','ON'],def:'OFF'},
+        {id:'kick_start',name:'Kickstart',desc:'Anschiebstart',opts:['OFF','ON'],def:'ON'}
+      ]
+    });
+    this.register('ninebot-g30', {
+      name:'Ninebot G30', params:[
+        {id:'speed_limit',name:'Geschwindigkeitslimit',unit:'km/h',min:10,max:30,step:1,def:20},
+        {id:'acceleration',name:'Beschleunigung',unit:'%',min:0,max:100,step:5,def:50},
+        {id:'regen_braking',name:'Rekuperation',unit:'%',min:0,max:100,step:5,def:30}
+      ]
+    });
+    this.register('segway-es', {
+      name:'Segway ES', params:[
+        {id:'speed_limit',name:'Geschwindigkeitslimit',unit:'km/h',min:10,max:25,step:1,def:20}
+      ]
+    });
+    this.register('unknown', {
+      name:'Unbekannter Scooter', params:[]
+    });
+  },
+  register(id, def) { this.models.set(id, def); },
+  get(id) { return this.models.get(id) || this.models.get('unknown'); },
+  getAll() { return Array.from(this.models.entries()).map(([k,v]) => ({id:k,name:v.name})); }
+};
+
+// ===== SECURITY SERVICE =====
+const Security = {
+  changing: false,
+  async validate(param, value) {
+    if (!State.connected) return {ok:false,msg:'Keine Bluetooth-Verbindung'};
+    const m = Scooters.get(State.scooter?.model);
+    if (!m) return {ok:false,msg:'Unbekanntes Scooter-Modell'};
+    const p = m.params.find(x => x.id === param);
+    if (!p) return {ok:false,msg:'Parameter nicht unterstützt'};
+    if (p.opts) {
+      if (!p.opts.includes(value)) return {ok:false,msg:`Erlaubt: ${p.opts.join(', ')}`};
+    } else {
+      if (value < p.min || value > p.max) return {ok:false,msg:`Bereich: ${p.min}-${p.max}`};
+    }
+    if (this.changing) return {ok:false,msg:'Laufende Änderung – bitte warten'};
+    return {ok:true,msg:''};
+  },
+  async apply(param, value) {
+    const v = await this.validate(param, value);
+    if (!v.ok) throw new Error(v.msg);
+    this.changing = true;
+    try {
+      // Hier: Echter BLE-Befehl senden
+      // await BT.writeCharacteristic('config', buildCommand(param, value));
+      await new Promise(r => setTimeout(r, 500)); // Simuliert
+      return true;
+    } finally { this.changing = false;
+      // NIEMALS während Änderung trennen
+    }
+  }
+};
+
+// ===== APP KERN =====
+const App = {
+  async init() {
+    // Einstellungen laden
+    const s = await Storage.get('settings');
+    if (s) Object.assign(State.settings, s);
+    // Profile laden
+    State.profiles = await Storage.get('profiles') || [];
+    // Backups laden
+    State.backups = await Storage.get('backups') || [];
+
+    Scooters.init();
+    Nav.build();
+    this.navigate('dashboard');
+  },
+
+  async navigate(page) {
+    if (State.page === page) return;
+    State.page = page;
+    Nav.setActive(page);
+    document.getElementById('main').innerHTML = this.renderPage(page);
+    // Lifecycle
+    if (this._onMount[page]) this._onMount[page]();
+  },
+
+  _onMount: {},
+
+  updateStatus(status) {
+    const dot = document.getElementById('status-dot');
+    dot.className = 'status-dot ' + status;
+  },
+
+  renderPage(page) {
+    const p = this._pages[page];
+    return p ? p() : '<div class="empty"><div class="empty-icon">🚀</div><div class="empty-title">Seite nicht gefunden</div></div>';
+  },
+
+  // ===== SEITEN =====
+  _pages: {
+    dashboard() {
+      const s = State.scooter;
+      if (!State.connected || !s) {
+        return `
+          <div class="empty">
+            <div class="empty-icon">🛴</div>
+            <div class="empty-title">Scooter Buddy</div>
+            <div class="empty-text">Verbinde deinen Scooter über Bluetooth, um das Dashboard zu nutzen</div>
+            <button class="btn btn-p" onclick="App.navigate('connect')">🔗 Scooter verbinden</button>
+          </div>
+          <div style="margin-top:16px">
+            <div class="card"><div class="card-title">📋 Gespeicherte Profile</div>
+            ${State.profiles.length ? State.profiles.map(p => `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+                <span><strong>${p.name}</strong><br><span style="font-size:.75rem;color:var(--text3)">${p.model}</span></span>
+                <button class="btn btn-s btn-sm" onclick="App.navigate('profiles')">Verwalten</button>
+              </div>
+            `).join('') : '<div style="color:var(--text3);font-size:.85rem;padding:8px 0">Noch keine Profile gespeichert</div>'}
+            </div>
+          </div>
+        `;
+      }
+      const model = Scooters.get(s.model);
+      return `
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:2rem">🛴</span>
+            <div>
+              <div style="font-size:1.2rem;font-weight:700">${s.name}</div>
+              <div style="font-size:.8rem;color:var(--text2)">${model?.name||'Unbekannt'}</div>
+            </div>
+            <span class="badge badge-ok" style="margin-left:auto">Verbunden</span>
+          </div>
+        </div>
+        <div class="m-grid">
+          <div class="m-card highlight"><div class="m-icon">⚡</div><div class="m-val">${State.liveData.speed.toFixed(1)}</div><div class="m-lbl">km/h</div></div>
+          <div class="m-card"><div class="m-icon">🔋</div><div class="m-val">${Math.round(State.liveData.battery)}%</div><div class="m-lbl">Akku</div></div>
+          <div class="m-card"><div class="m-icon">📊</div><div class="m-val">${State.liveData.voltage.toFixed(1)}V</div><div class="m-lbl">Spannung</div></div>
+          <div class="m-card"><div class="m-icon">🌡️</div><div class="m-val">${State.liveData.motorTemp.toFixed(0)}°C</div><div class="m-lbl">Motor</div></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-p" onclick="App.navigate('live')">📊 Live-Daten</button>
+          <button class="btn btn-s" onclick="App.navigate('tuning')">🔧 Tuning</button>
+        </div>
+        <button class="btn btn-d" style="margin-top:8px" onclick="App.disconnectScooter()">🔌 Trennen</button>
+      `;
+    },
+
+    connect() {
+      return `
+        <div class="card" style="text-align:center;padding:32px 16px">
+          <div style="font-size:3rem;margin-bottom:16px">🔗</div>
+          <div class="card-title" style="font-size:1rem;text-transform:none;letter-spacing:0">Scooter verbinden</div>
+          <p style="color:var(--text2);margin:12px 0;font-size:.9rem">Bluetooth muss aktiviert sein. Dein Scooter sollte eingeschaltet sein.</p>
+          <button class="btn btn-p" onclick="App.startScan()" ${State.connecting?'disabled':''}>${State.connecting?'🔍 Suche läuft...':'🔍 Scooter suchen'}</button>
+          ${State.connected?`<div style="margin-top:12px;padding:12px;background:rgba(34,197,94,.1);border-radius:var(--radius);color:var(--success)">✅ Bereits verbunden mit ${State.scooter?.name}</div>`:''}
+        </div>
+        <div id="scan-results"></div>
+      `;
+    },
+
+    live() {
+      if (!State.connected) return `<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Keine Verbindung</div><div class="empty-text">Verbinde zuerst einen Scooter</div><button class="btn btn-p" onclick="App.navigate('connect')">Verbinden</button></div>`;
+      const d = State.liveData;
+      return `
+        <div class="card"><div class="card-title">⚡ Live-Daten</div><div style="font-size:.8rem;color:var(--text2)">Aktualisiert sich automatisch</div></div>
+        <div class="live-g">
+          <div class="gauge"><div class="gauge-val" id="g-speed">${d.speed.toFixed(1)}</div><div class="gauge-unit">km/h</div><div class="gauge-lbl">Geschwindigkeit</div><div class="gauge-bar"><div class="gauge-fill p" style="width:${Math.min(d.speed/30*100,100)}%"></div></div></div>
+          <div class="gauge"><div class="gauge-val" id="g-bat">${Math.round(d.battery)}%</div><div class="gauge-unit">%</div><div class="gauge-lbl">Akku</div><div class="gauge-bar"><div class="gauge-fill bat" style="width:${d.battery}%"></div></div></div>
+          <div class="gauge"><div class="gauge-val" id="g-volt">${d.voltage.toFixed(1)}</div><div class="gauge-unit">V</div><div class="gauge-lbl">Spannung</div></div>
+          <div class="gauge"><div class="gauge-val" id="g-cur">${d.current.toFixed(1)}</div><div class="gauge-unit">A</div><div class="gauge-lbl">Strom</div></div>
+          <div class="gauge"><div class="gauge-val" id="g-pow">${Math.round(d.power)}</div><div class="gauge-unit">W</div><div class="gauge-lbl">Leistung</div></div>
+          <div class="gauge"><div class="gauge-val" id="g-mt">${d.motorTemp.toFixed(0)}</div><div class="gauge-unit">°C</div><div class="gauge-lbl">Motor-Temp</div></div>
+          <div class="gauge"><div class="gauge-val" id="g-ct">${d.controllerTemp.toFixed(0)}</div><div class="gauge-unit">°C</div><div class="gauge-lbl">Controller-Temp</div></div>
+          <div class="gauge"><div class="gauge-val" id="g-odo">${d.odometer.toFixed(1)}</div><div class="gauge-unit">km</div><div class="gauge-lbl">Kilometerstand</div></div>
+          <div class="gauge"><div class="gauge-val" id="g-trip">${d.trip.toFixed(1)}</div><div class="gauge-unit">km</div><div class="gauge-lbl">Trip</div></div>
+        </div>
+      `;
+    },
+
+    tuning() {
+      if (!State.connected) return `<div class="empty"><div class="empty-icon">🔧</div><div class="empty-title">Keine Verbindung</div><div class="empty-text">Verbinde zuerst einen Scooter</div><button class="btn btn-p" onclick="App.navigate('connect')">Verbinden</button></div>`;
+      const model = Scooters.get(State.scooter?.model);
+      if (!model || !model.params.length) return `<div class="empty"><div class="empty-icon">🔧</div><div class="empty-title">Keine Tuning-Parameter</div><div class="empty-text">Für ${State.scooter?.name||'diesen Scooter'} sind keine Tuning-Einstellungen verfügbar</div></div>`;
+      return `
+        <div class="card"><div class="card-title">🔧 Tuning – ${model.name}</div><div style="font-size:.8rem;color:var(--text2)">Änderungen werden sofort angewandt</div></div>
+        ${model.params.map(p => `
+          <div class="tune-item">
+            <div class="tune-info">
+              <div class="tune-name">${p.name}</div>
+              <div class="tune-desc">${p.desc||''}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${p.opts ? `
+                <select class="inp" style="width:auto;padding:8px 32px 8px 12px;font-size:.85rem" onchange="App.applyTuning('${p.id}',this.value)">
+                  ${p.opts.map(o => `<option value="${o}" ${o===p.def?'selected':''}>${o}</option>`).join('')}
+                </select>
+              ` : `
+                <div style="display:flex;align-items:center;gap:4px">
+                  <input type="number" class="inp" style="width:80px;padding:8px;text-align:center;font-size:.9rem" value="${p.def}" min="${p.min}" max="${p.max}" step="${p.step}" id="tune-${p.id}">
+                  <span style="font-size:.8rem;color:var(--text2);min-width:30px">${p.unit||''}</span>
+                </div>
+                <button class="btn btn-p btn-sm" style="width:auto;padding:8px 16px" onclick="App.applyTuning('${p.id}')">Anwenden</button>
+              `}
+            </div>
+          </div>
+        `).join('')}
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">⚠️ Sicherheitshinweis</div>
+          <p style="font-size:.8rem;color:var(--text2)">Änderungen am Scooter können das Fahrverhalten beeinflussen. Nur bei stehendem Scooter durchführen. Du bist verantwortlich für die Einhaltung lokaler Gesetze.</p>
+        </div>
+      `;
+    },
+
+    diagnose() {
+      if (!State.connected) return `<div class="empty"><div class="empty-icon">🩺</div><div class="empty-title">Keine Verbindung</div><div class="empty-text">Verbinde zuerst einen Scooter</div><button class="btn btn-p" onclick="App.navigate('connect')">Verbinden</button></div>`;
+      const d = State.liveData;
+      const model = Scooters.get(State.scooter?.model);
+      return `
+        <div class="card"><div class="card-title">🩺 Diagnose</div></div>
+        <div class="card">
+          <div class="card-title">Verbindung</div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Status</span><span class="badge badge-ok">✅ Verbunden</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Gerät</span><span>${State.scooter?.name||'Unbekannt'}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Modell</span><span>${model?.name||'Unbekannt'}</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Akku</div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Ladung</span><span>${Math.round(d.battery)}%</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Spannung</span><span>${d.voltage.toFixed(1)}V</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Strom</span><span>${d.current.toFixed(1)}A</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Temperaturen</div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Motor</span><span class="${d.motorTemp>60?'badge badge-d':d.motorTemp>45?'badge badge-w':'badge badge-ok'}">${d.motorTemp.toFixed(0)}°C</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Controller</span><span class="${d.controllerTemp>50?'badge badge-d':'badge badge-ok'}">${d.controllerTemp.toFixed(0)}°C</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Firmware</div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Version</span><span>1.0.0 (Platzhalter)</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--text2)">Hardware</span><span>1.0 (Platzhalter)</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Fehlercodes</div>
+          <div style="font-size:.85rem;color:var(--text2)">Keine Fehler erkannt</div>
+        </div>
+      `;
+    },
+
+    profiles() {
+      return `
+        <div class="card"><div class="card-title">👤 Scooter-Profile</div></div>
+        ${State.profiles.length ? State.profiles.map((p,i) => `
+          <div class="card" style="cursor:pointer" onclick="App.editProfile(${i})">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-weight:600">${p.name}</div>
+                <div style="font-size:.8rem;color:var(--text2)">${p.model} • ${p.firmware||'?'}</div>
+              </div>
+              <button class="btn btn-s btn-sm" style="width:auto" onclick="event.stopPropagation();App.deleteProfile(${i})">🗑️</button>
+            </div>
+          </div>
+        `).join('') : '<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Keine Profile</div><div class="empty-text">Speichere deinen aktuellen Scooter als Profil</div></div>'}
+        <button class="btn btn-p" style="margin-top:8px" onclick="App.addProfile()" ${!State.connected?'disabled':''}>${State.connected?'💾 Aktuellen Scooter speichern':'🔗 Scooter verbinden zum Speichern'}</button>
+      `;
+    },
+
+    settings() {
+      const s = State.settings;
+      return `
+        <div class="card"><div class="card-title">⚙️ Einstellungen</div></div>
+        <div class="set-g">
+          <div class="set-g-title">Allgemein</div>
+          <div class="set-item"><span class="set-lbl">🌙 Dark Mode</span><div class="toggle" onclick="App.toggleSetting('darkMode')"><div class="track ${s.darkMode?'on':''}"><div class="thumb"></div></div></div></div>
+          <div class="set-item"><span class="set-lbl">🌐 Sprache</span>
+            <select class="inp" style="width:auto;padding:6px 32px 6px 12px;font-size:.85rem" onchange="App.updateSetting('language',this.value)">
+              <option value="de" ${s.language==='de'?'selected':''}>Deutsch</option>
+              <option value="en" ${s.language==='en'?'selected':''}>English</option>
+            </select>
+          </div>
+          <div class="set-item"><span class="set-lbl">📏 Einheiten</span>
+            <select class="inp" style="width:auto;padding:6px 32px 6px 12px;font-size:.85rem" onchange="App.updateSetting('unit',this.value)">
+              <option value="kmh" ${s.unit==='kmh'?'selected':''}>km/h</option>
+              <option value="mph" ${s.unit==='mph'?'selected':''}>mph</option>
+            </select>
+          </div>
+        </div>
+        <div class="set-g">
+          <div class="set-g-title">Benachrichtigungen</div>
+          <div class="set-item"><span class="set-lbl">🔔 Benachrichtigungen</span><div class="toggle" onclick="App.toggleSetting('notifications')"><div class="track ${s.notifications?'on':''}"><div class="thumb"></div></div></div></div>
+        </div>
+        <div class="set-g">
+          <div class="set-g-title">Info</div>
+          <div class="set-item"><span class="set-lbl">Version</span><span class="set-val">1.0.0</span></div>
+          <div class="set-item" style="cursor:pointer" onclick="Modal.alert('Datenschutz','Scooter Buddy speichert alle Daten lokal auf deinem Gerät. Es werden keine Daten an Dritte gesendet. Bluetooth-Verbindungen erfolgen ausschließlich zwischen deinem Gerät und deinem Scooter.')"><span class="set-lbl">🔒 Datenschutz</span><span class="set-val">→</span></div>
+          <div class="set-item" style="cursor:pointer" onclick="Modal.alert('Nutzungsbedingungen','Scooter Buddy ist ein Diagnose- und Verwaltungstool. Änderungen an Scooter-Einstellungen erfolgen auf eigene Verantwortung. Der Betreiber übernimmt keine Haftung für Schäden. Bitte lokale Gesetze beachten.')"><span class="set-lbl">📄 Nutzungsbedingungen</span><span class="set-val">→</span></div>
+        </div>
+      `;
+    }
+  },
+
+  // ===== ACTIONS =====
+
+  async startScan() {
+    if (State.connecting) return;
+    if (!await BT.isAvailable()) {
+      Modal.alert('❌ Bluetooth nicht verfügbar', 'Dein Gerät unterstützt kein Bluetooth oder die Berechtigung wurde verweigert.');
+      return;
+    }
+    const results = document.getElementById('scan-results');
+    if (results) results.innerHTML = '<div style="text-align:center;padding:24px"><div class="spin spin-l"></div><p style="margin-top:12px;color:var(--text2)">Suche nach Scootern...</p></div>';
+    App.updateStatus('connecting');
+    State.connecting = true;
+    App.navigate('connect');
+
+    try {
+      const device = await BT.scan();
+      if (results) {
+        results.innerHTML = `
+          <div class="card" style="margin-top:16px">
+            <div class="card-title">📡 Gefunden</div>
+            <div class="dev-item" onclick="App.connectToDevice()">
+              <div class="dev-info">
+                <div class="dev-name">${device.name}</div>
+                <div class="dev-meta">${device.id.slice(0,8)}... | RSSI: ${device.rssi}</div>
+              </div>
+              <span class="badge badge-i">Verbinden →</span>
+            </div>
+          </div>
+        `;
+      }
+    } catch(e) {
+      State.connecting = false;
+      App.updateStatus('offline');
+      if (results) {
+        results.innerHTML = `
+          <div class="card" style="margin-top:16px;text-align:center;padding:24px">
+            <div style="font-size:2rem;margin-bottom:12px">😕</div>
+            <div class="card-title" style="font-size:1rem;text-transform:none;letter-spacing:0">Kein Scooter gefunden</div>
+            <p style="color:var(--text2);font-size:.85rem;margin:8px 0">
+              ${e.message.includes('Berechtigung')?'🔒 Bluetooth-Berechtigung verweigert – bitte Berechtigung erteilen und erneut versuchen'
+                :e.message.includes('NotFound')?'🔍 Scooter ausgeschaltet oder nicht in Reichweite?'
+                :e.message.includes('Security')?'🔒 Bluetooth deaktiviert oder blockiert'
+                :'❌ '+e.message}
+            </p>
+            <button class="btn btn-p" style="margin-top:12px" onclick="App.startScan()">Erneut suchen</button>
+          </div>
+        `;
+      }
+    }
+  },
+
+  async connectToDevice() {
+    try {
+      // Device ist bereits durch scan() ausgewählt
+      // Web Bluetooth API wählt das Gerät beim scan
+      Toast.info('🔗 Verbinde...');
+      const scooter = await BT.connect({gatt:{device:navigator.bluetooth.device}});
+      Toast.success(`✅ ${scooter.name} verbunden`);
+      App.navigate('dashboard');
+    } catch(e) {
+      Toast.error(`❌ ${e.message}`);
+      App.updateStatus('offline');
+    }
+  },
+
+  async disconnectScooter() {
+    Modal.confirm('🔌 Trennen?', 'Wird der Scooter getrennt, werden keine Live-Daten mehr empfangen.', async (ok) => {
+      if (ok) {
+        await BT.disconnect();
+        Toast.info('Scooter getrennt');
+        App.navigate('dashboard');
+      }
+    });
+  },
+
+  async applyTuning(paramId, value) {
+    if (!State.connected) { Toast.error('Keine Verbindung'); return; }
+    if (Security.changing) { Toast.warning('Bitte warten...'); return; }
+
+    // Bei Input-Feldern Wert auslesen
+    if (!value) {
+      const inp = document.getElementById('tune-'+paramId);
+      if (!inp) return;
+      value = inp.value;
+    }
+
+    // Sicherheitsabfrage
+    Modal.confirm('⚠️ Änderung bestätigen',
+      `Soll der Wert wirklich geändert werden?<br><br>Stelle sicher, dass der Scooter sicher steht und nicht belastet ist.<br><br>Du bist verantwortlich für die Einhaltung lokaler Gesetze.`,
+      async (ok) => {
+        if (!ok) { Toast.info('Abgebrochen'); return; }
+        try {
+          await Security.apply(paramId, value);
+          Toast.success('✅ Wert übernommen');
+          // In Backup speichern
+          const b = await Storage.get('backups') || [];
+          b.push({id:Date.now(),param:paramId,value:value,date:new Date().toISOString()});
+          await Storage.set('backups', b.slice(-20)); // max 20
+        } catch(e) {
+          Toast.error(`❌ ${e.message}`);
+        }
+      }
+    );
+  },
+
+  async addProfile() {
+    if (!State.connected) { Toast.error('Kein Scooter verbunden'); return; }
+    Modal.show(`
+      <div class="modal-title">💾 Profil speichern</div>
+      <div class="inp-g"><label>Name</label><input class="inp" id="prof-name" value="${State.scooter?.name||'Mein Scooter'}" placeholder="Scooter-Name"></div>
+      <div class="modal-actions">
+        <button class="btn btn-s" onclick="Modal.hide()">Abbrechen</button>
+        <button class="btn btn-p" onclick="App._saveProfile(document.getElementById('prof-name').value)">Speichern</button>
+      </div>
+    `);
+  },
+
+  async _saveProfile(name) {
+    if (!name.trim()) { Toast.error('Name erforderlich'); return; }
+    Modal.hide();
+    State.profiles.push({
+      id: Date.now(),
+      name: name.trim(),
+      model: State.scooter?.model || 'unknown',
+      modelName: Scooters.get(State.scooter?.model)?.name || 'Unbekannt',
+      firmware: '1.0.0',
+      saved: new Date().toISOString()
+    });
+    await Storage.set('profiles', State.profiles);
+    Toast.success('✅ Profil gespeichert');
+    App.navigate('profiles');
+  },
+
+  async deleteProfile(index) {
+    Modal.confirm('🗑️ Löschen?', 'Soll dieses Profil wirklich gelöscht werden?', async (ok) => {
+      if (ok) {
+        State.profiles.splice(index, 1);
+        await Storage.set('profiles', State.profiles);
+        Toast.info('Profil gelöscht');
+        App.navigate('profiles');
+      }
+    });
+  },
+
+  editProfile(index) {
+    const p = State.profiles[index];
+    Modal.show(`
+      <div class="modal-title">👤 ${p.name}</div>
+      <div class="modal-body">
+        <div style="margin-bottom:8px"><strong>Modell:</strong> ${p.modelName}</div>
+        <div style="margin-bottom:8px"><strong>Firmware:</strong> ${p.firmware||'?'}</div>
+        <div style="margin-bottom:8px"><strong>Gespeichert:</strong> ${new Date(p.saved).toLocaleDateString('de-DE')}</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-s" onclick="Modal.hide()">Schließen</button>
+        <button class="btn btn-d" onclick="Modal.hide();App.deleteProfile(${index})">Löschen</button>
+      </div>
+    `);
+  },
+
+  async toggleSetting(key) {
+    State.settings[key] = !State.settings[key];
+    await Storage.set('settings', State.settings);
+    App.navigate('settings');
+  },
+
+  async updateSetting(key, value) {
+    State.settings[key] = value;
+    await Storage.set('settings', State.settings);
+  },
+
+  // Live-Daten-Update (wird von BT-Notifications aufgerufen)
+  _updateLiveData() {
+    const p = State.page;
+    if (p === 'dashboard') App.navigate('dashboard');
+    else if (p === 'live') App.navigate('live');
+  }
+};
+
+// ===== START =====
+document.addEventListener('DOMContentLoaded', () => App.init());
+
+// Live-Daten-Update-Interval (Simuliert für Demo)
+// In echter App: Wird durch BLE-Notifications getrieben
+setInterval(() => {
+  if (State.connected && !State.connecting) {
+    // Demo-Daten – werden durch echte BLE-Daten ersetzt
+    // Diese Zeilen sind NUR für die Darstellung ohne echten Scooter
+    // Sobald echter Scooter verbunden ist, kommen echte Daten
+  }
+}, 2000);
+
+// Modal-Overlay-Klick zum Schließen
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.add('hidden');
+});
+
+})();
+</script>
+</body>
+  </html>
